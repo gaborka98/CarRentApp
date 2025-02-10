@@ -1,0 +1,57 @@
+name: Azure IaC
+
+on:
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: Terraform Destroy Plan
+        type: boolean
+        default: false
+
+jobs:
+  azure-deploy:
+    runs-on: ubuntu-latest
+    if: ${{ ! inputs.destroy }}
+    defaults:
+      run:
+        working-directory: ./IaC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Tofu Init
+        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }}
+
+      - name: Tofu Plan
+        id: plan
+        run: >-
+          tofu plan -no-color -out='tf.plan'
+          -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
+
+      - name: Tofu Apply
+        run: tofu apply -input=false tf.plan
+
+  azure-destroy:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.destroy }}
+    defaults:
+      run:
+        working-directory: ./IaC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Tofu Init
+        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }}
+      - name: Tofu Destroy
+        run: >-
+          tofu apply -destroy -input=false
+          -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
