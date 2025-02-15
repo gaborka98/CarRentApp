@@ -1,0 +1,40 @@
+name: Azure IaC
+
+on:
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: Terraform Destroy Plan
+        type: boolean
+        default: false
+
+jobs:
+  tf-init:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+
+      - name: Tofu Init
+        run: tofu init
+
+  tf-apply:
+    runs-on: ubuntu-latest
+    if: ${{ ! inputs.destroy }}
+    needs:
+      - tf-init
+    steps:
+      - name: Tofu Plan
+        id: plan
+        run: tofu plan -no-color -out tf.plan
+
+  #      - name: Tofu Apply
+  #        run: tofu apply -input=false -var='azure_subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}' tf.plan
+  ts-destroy:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.destroy }}
+    needs:
+      - tf-init
+    steps:
+      - name: Tofu Destroy
+        run: tofu apply -destroy -input=false
