@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED=1
 
 RUN pip install --upgrade pip
 
-COPY . /app/
+COPY --chown=django --chmod=777 . /app/
+
+RUN chmod -R 777 /app
 
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -16,4 +18,5 @@ USER django
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "DjangoProject.wsgi"]
+ENTRYPOINT ["/bin/sh"]
+CMD ["./startup.sh"]

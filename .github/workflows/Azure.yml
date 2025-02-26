@@ -9,32 +9,50 @@ on:
         default: false
 
 jobs:
-  tf-init:
+  azure-deploy:
     runs-on: ubuntu-latest
+    if: ${{ ! inputs.destroy }}
+    defaults:
+      run:
+        working-directory: ./IaC
+
     steps:
       - uses: actions/checkout@v4
       - uses: opentofu/setup-opentofu@v1
 
-      - name: Tofu Init
-        run: tofu init
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-  tf-apply:
-    runs-on: ubuntu-latest
-    if: ${{ ! inputs.destroy }}
-    needs:
-      - tf-init
-    steps:
+      - name: Tofu Init
+        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }}
+
       - name: Tofu Plan
         id: plan
-        run: tofu plan -no-color -out tf.plan
+        run: >-
+          tofu plan -no-color -out='tf.plan'
+          -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
 
-  #      - name: Tofu Apply
-  #        run: tofu apply -input=false -var='azure_subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}' tf.plan
-  ts-destroy:
+      - name: Tofu Apply
+        run: tofu apply -input=false tf.plan
+
+  azure-destroy:
     runs-on: ubuntu-latest
     if: ${{ inputs.destroy }}
-    needs:
-      - tf-init
+    defaults:
+      run:
+        working-directory: ./IaC
     steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Tofu Init
+        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }}
       - name: Tofu Destroy
-        run: tofu apply -destroy -input=false
+        run: >-
+          tofu apply -destroy -input=false
+          -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
