@@ -26,8 +26,6 @@ resource "azurerm_linux_web_app" "webapp" {
     "POSTGRES_USER"       = azurerm_postgresql_server.postgreserver.administrator_login
     "POSTGRES_PASSWORD"   = azurerm_postgresql_server.postgreserver.administrator_login_password
     "POSTGRES_DB"         = azurerm_postgresql_database.databaseDjango.name
-    "AZURE_ACCOUNT_NAME"  = azurerm_storage_account.cdn.name
-    "AZURE_ACCOUNT_KEY"   = azurerm_storage_account.cdn.primary_access_key
   }
 
   site_config {
@@ -39,8 +37,7 @@ resource "azurerm_linux_web_app" "webapp" {
   }
 
   depends_on = [
-    azurerm_resource_group.rg, azurerm_service_plan.webappPlan, azurerm_postgresql_database.databaseDjango,
-    azurerm_storage_account.cdn
+    azurerm_resource_group.rg, azurerm_service_plan.webappPlan, azurerm_postgresql_database.databaseDjango
   ]
 }
 
@@ -78,7 +75,7 @@ resource "random_password" "dbadminpassword" {
 
 resource "azurerm_key_vault_secret" "dbpassword" {
   key_vault_id = azurerm_key_vault.admin.id
-  name         = "ms-sql-admin-password"
+  name         = "pg-sql-admin-password"
   value        = random_password.dbadminpassword.result
 
   depends_on = [azurerm_role_assignment.appToKv, random_password.dbadminpassword]
@@ -114,31 +111,4 @@ resource "azurerm_postgresql_database" "databaseDjango" {
 
   depends_on = [azurerm_postgresql_server.postgreserver]
 }
-
-# resource "azurerm_mssql_server" "django" {
-#   name                         = "mssqlserver-weu-gaborka812-django"
-#   resource_group_name          = azurerm_resource_group.rg.name
-#   location                     = azurerm_resource_group.rg.location
-#   version                      = "12.0"
-#   administrator_login          = "azureadmin"
-#   administrator_login_password = random_password.dbadminpassword.result
-#   minimum_tls_version          = "1.2"
-#
-#   azuread_administrator {
-#     login_username = "gaborka812"
-#     object_id      = data.azurerm_client_config.current.object_id
-#   }
-#
-#   depends_on = [azurerm_resource_group.rg, random_password.dbadminpassword]
-# }
-#
-# resource "azurerm_mssql_database" "djangodb" {
-#   name         = "mssqldatabase-weu-gaborka812-django"
-#   server_id    = azurerm_mssql_server.django.id
-#   collation    = "SQL_Latin1_General_CP1_CI_AS"
-#   license_type = "LicenseIncluded"
-#   sku_name     = "S0"
-#   max_size_gb  = 5
-#   depends_on = [azurerm_mssql_server.django]
-# }
 
