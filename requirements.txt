@@ -4,3 +4,5 @@ pycodestyle~=2.12.1
 whitenoise~=6.9.0
 pillow~=11.1.0
 psycopg2-binary~=2.9.10 # postgresql backend
+unittest-xml-reporting
+checkov

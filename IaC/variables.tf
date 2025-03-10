@@ -10,7 +10,7 @@ variable "dockerimageName" {
 
 variable "dockerRegistryUrl" {
   type    = string
-  default = "registry-1.docker.io"
+  default = "https://registry-1.docker.io"
 }
 
 variable "extraAllowedHosts" {
