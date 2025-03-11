@@ -11,7 +11,7 @@ jobs:
       - uses: webiny/action-conventional-commits@v1.3.0
       - name: Parse version
         run: |
-          version=$(echo "$commit_msg" | grep -oP '(?<=\()\d+\.\d+\.\d+(?=\))')
+          version=$(echo "${{ github.event.head_commit.message }}" | grep -oP '(?<=\()\d+\.\d+\.\d+(?=\))')
           echo $version
           
           echo "VERSION=$version" >> $GITHUB_ENV
@@ -27,4 +27,4 @@ jobs:
         with:
           file: Dockerfile
           push: true
-          tags: gaborka98/django-test:$VERSION
+          tags: gaborka98/django-test:${{ env.VERSION }}
