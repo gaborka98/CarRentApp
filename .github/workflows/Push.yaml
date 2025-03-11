@@ -27,4 +27,4 @@ jobs:
         with:
           file: Dockerfile
           push: true
-          tags: gaborka98/django-test:$VERSION
+          tags: gaborka98/django-test:${{ env.VERSION }}
