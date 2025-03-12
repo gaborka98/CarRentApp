@@ -18,20 +18,20 @@ only run checkov if IAC folder changed
 
 #### tf pipeline deploy infra:
 
-- [ ] container apps for app
-- [ ] keyvault for admin pw
-- [ ] postgre for db
+- [x] container apps for app
+- [x] keyvault for admin pw
+- [x] postgre for db
 
 ---
 
-- [ ] tf plan
+- [x] tf plan
 - [ ] checkov ????
 - [ ] sonarqube ????
-- [ ] tf apply
+- [x] tf apply
 
 #### Main branch pipeline
 
-- [ ] check merge message contains version
-- [ ] build docker image
-- [ ] push docker image
+- [x] check merge message contains version
+- [x] build docker image
+- [x] push docker image
 - [ ] deploy app to container apps
