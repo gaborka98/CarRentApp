@@ -11,6 +11,7 @@ on:
 jobs:
   azure-deploy:
     runs-on: ubuntu-latest
+    permissions: write-all
     if: ${{ ! inputs.destroy }}
     defaults:
       run:
@@ -25,13 +26,28 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Tofu Init
-        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }}
+        run: tofu init -backend-config=password=${{ secrets.GITLAB_ACCESS_TOKEN }} -reconfigure
 
       - name: Tofu Plan
         id: plan
-        run: >-
-          tofu plan -no-color -out='tf.plan'
-          -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
+        run: |-
+          tofu plan -no-color -out='tf.plan' -var 'azureSubscriptionId=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
+          tofu show -json tf.plan | jq '.' > tfplan.json
+
+      - name: Checkov scan
+        uses: bridgecrewio/checkov-action@v12
+        continue-on-error: true
+        with:
+          # This will add both a CLI output to the console and create a results.sarif file
+          file: ${{github.workspace}}/IaC/tfplan.json
+          output_format: sarif
+          output_file_path: results.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
 
       - name: Tofu Apply
         run: tofu apply -input=false tf.plan

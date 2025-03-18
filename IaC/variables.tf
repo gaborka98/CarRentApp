@@ -5,12 +5,7 @@ variable "webappName" {
 
 variable "dockerimageName" {
   type    = string
-  default = "gaborka98/django-test:latest"
-}
-
-variable "dockerRegistryUrl" {
-  type    = string
-  default = "https://registry-1.docker.io"
+  default = "docker.io/gaborka98/django-test:latest"
 }
 
 variable "extraAllowedHosts" {
