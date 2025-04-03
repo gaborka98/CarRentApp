@@ -99,12 +99,50 @@ resource "random_password" "djangoadminpassword" {
   special = true
 }
 
+resource "azurerm_virtual_network" "vnet" {
+  name                = "example-vn"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  address_space = ["10.0.0.0/16"]
+}
+
+resource "azurerm_subnet" "snet" {
+  name                 = "example-sn"
+  resource_group_name  = azurerm_resource_group.rg.location
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes = ["10.0.2.0/24"]
+  service_endpoints = ["Microsoft.Storage"]
+  delegation {
+    name = "fs"
+    service_delegation {
+      name = "Microsoft.DBforPostgreSQL/flexibleServers"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+      ]
+    }
+  }
+}
+resource "azurerm_private_dns_zone" "privatednszone" {
+  name                = "example.postgres.database.azure.com"
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "dnslink" {
+  name                  = "exampleVnetZone.com"
+  private_dns_zone_name = azurerm_private_dns_zone.privatednszone.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+  resource_group_name   = azurerm_resource_group.rg.name
+  depends_on = [azurerm_subnet.snet]
+}
+
 resource "azurerm_postgresql_flexible_server" "djangoserver" {
   name                          = "pfsql-flexible-weu-gaborka812"
   resource_group_name           = azurerm_resource_group.rg.name
   location                      = azurerm_resource_group.rg.location
   version                       = "16"
-  public_network_access_enabled = true
+  public_network_access_enabled = false
+  private_dns_zone_id           = azurerm_private_dns_zone.privatednszone.id
+  delegated_subnet_id           = azurerm_subnet.snet.id
   administrator_login           = "psqladmin"
   administrator_password        = random_password.dbadminpassword.result
 
@@ -114,8 +152,8 @@ resource "azurerm_postgresql_flexible_server" "djangoserver" {
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
 
-  sku_name = "GP_Standard_D2s_v3"
-  depends_on = [azurerm_resource_group.rg]
+  sku_name = "B_Standard_B1ms"
+  depends_on = [azurerm_private_dns_zone_virtual_network_link.dnslink]
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allowazureservices" {
