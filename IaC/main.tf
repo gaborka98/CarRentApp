@@ -21,6 +21,10 @@ resource "azurerm_container_app" "containerapp" {
     name  = "postgre-db-password"
     value = random_password.dbadminpassword.result
   }
+  secret {
+    name  = "admin-password"
+    value = random_password.djangoadminpassword.result
+  }
 
   ingress {
     target_port      = 8000
@@ -41,7 +45,7 @@ resource "azurerm_container_app" "containerapp" {
       name   = "container-app-weu-gaborka812"
 
       env {
-        name  = "DJANGO_ALLOWED_HOST"
+        name  = "DJANGO_ALLOWED_HOSTS"
         value = "*,${join(",", var.extraAllowedHosts)}"
       }
       env {
@@ -64,12 +68,33 @@ resource "azurerm_container_app" "containerapp" {
         name  = "POSTGRES_DB"
         value = azurerm_postgresql_flexible_server_database.databaseDjango.name
       }
+
+      env {
+        name  = "DJANGO_SUPERUSER_EMAIL"
+        value = "gaborka98@freemail.hu"
+      }
+
+      env {
+        name  = "DJANGO_SUPERUSER_USERNAME"
+        value = "gaborka98"
+      }
+
+      env {
+        name        = "DJANGO_SUPERUSER_PASSWORD"
+        secret_name = "admin-password"
+      }
+
     }
   }
   depends_on = [azurerm_postgresql_flexible_server_database.databaseDjango]
 }
 
 resource "random_password" "dbadminpassword" {
+  length  = 16
+  special = true
+}
+
+resource "random_password" "djangoadminpassword" {
   length  = 16
   special = true
 }
