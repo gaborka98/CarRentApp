@@ -19,13 +19,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-px$8=&$%qy%b81x@3o*hqjv@1h8yq0s(xuu!8bo!7z0rja%f5b'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = environ.get('DJANGO_DEBUG', 'False').lower() != 'false'
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-px$8=&$%qy%b81x@3o*hqjv@1h8yq0s(xuu!8bo!7z0rja%f5b' if DEBUG else environ.get(
+    'DJANGO_SECRET_KEY')
 
 ALLOWED_HOSTS = environ.get('DJANGO_ALLOWED_HOSTS', "").split(',')
+CSRF_TRUSTED_ORIGINS = environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', "").split(',')
+SECURE_HSTS_SECONDS = 31536000
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 # Application definition
 

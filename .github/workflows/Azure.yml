@@ -8,6 +8,9 @@ on:
         type: boolean
         default: false
 
+env:
+  PYTHONUNBUFFERED: 1
+
 jobs:
   azure-deploy:
     runs-on: ubuntu-latest

@@ -1,19 +1,24 @@
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "rg" {
-  name     = "rgrp-weu-gaborka812-webapp"
+  name     = "rgrp${local.resourceNamePostfix}"
   location = "West Europe"
 }
 
 resource "azurerm_container_app_environment" "appenv" {
   location            = azurerm_resource_group.rg.location
-  name                = "app-env-weu-gaborka812"
+  name                = "django-appenv${local.resourceNamePostfix}"
   resource_group_name = azurerm_resource_group.rg.name
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+    maximum_count         = 1
+  }
 }
 
 resource "azurerm_container_app" "containerapp" {
   container_app_environment_id = azurerm_container_app_environment.appenv.id
-  name                         = "container-app-weu-gaborka812"
+  name                         = "${var.webappName}${local.resourceNamePostfix}"
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -42,11 +47,16 @@ resource "azurerm_container_app" "containerapp" {
       image = var.dockerimageName
 
       memory = "0.5Gi"
-      name   = "container-app-weu-gaborka812"
+      name   = var.webappName
 
       env {
         name  = "DJANGO_ALLOWED_HOSTS"
-        value = "*,${join(",", var.extraAllowedHosts)}"
+        value = ".azurecontainerapps.io"
+      }
+
+      env {
+        name  = "DJANGO_ALLOWED_HOSTS"
+        value = "https://*.azurecontainerapps.io"
       }
       env {
         name  = "DJANGO_DB_TYPE"
@@ -84,6 +94,11 @@ resource "azurerm_container_app" "containerapp" {
         secret_name = "admin-password"
       }
 
+      env {
+        name  = "DJANGO_SECRET_KEY"
+        value = random_password.djangosecretkey.result
+      }
+
     }
   }
   depends_on = [azurerm_postgresql_flexible_server_database.databaseDjango]
@@ -99,8 +114,16 @@ resource "random_password" "djangoadminpassword" {
   special = true
 }
 
+resource "random_password" "djangosecretkey" {
+  length  = 64
+  special = true
+  numeric = true
+  lower   = true
+  upper   = true
+}
+
 resource "azurerm_postgresql_flexible_server" "djangoserver" {
-  name                          = "pfsql-flexible-weu-gaborka812"
+  name                          = "django-pfsql${local.resourceNamePostfix}"
   resource_group_name           = azurerm_resource_group.rg.name
   location                      = azurerm_resource_group.rg.location
   version                       = "16"
@@ -114,15 +137,12 @@ resource "azurerm_postgresql_flexible_server" "djangoserver" {
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
 
-  sku_name = "GP_Standard_D2s_v3"
-  depends_on = [azurerm_resource_group.rg]
-}
+  sku_name = "B_Standard_B1ms"
 
-resource "azurerm_postgresql_flexible_server_firewall_rule" "allowazureservices" {
-  name             = "allowazureservices"
-  server_id        = azurerm_postgresql_flexible_server.djangoserver.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+  authentication {
+    active_directory_auth_enabled = true
+    tenant_id                     = data.azurerm_client_config.current.tenant_id
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "databaseDjango" {
@@ -133,3 +153,13 @@ resource "azurerm_postgresql_flexible_server_database" "databaseDjango" {
   server_id = azurerm_postgresql_flexible_server.djangoserver.id
 }
 
+resource "azurerm_postgresql_flexible_server_active_directory_administrator" "example" {
+  server_name         = azurerm_postgresql_flexible_server.djangoserver.name
+  resource_group_name = azurerm_resource_group.rg.name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  object_id           = "ea83df21-60f5-4f8c-ab84-09daeb5504a1"
+  principal_name      = "gaborka812_gmail.com#EXT#@gaborka812.onmicrosoft.com"
+  principal_type      = "User"
+
+  depends_on = [azurerm_postgresql_flexible_server.djangoserver]
+}

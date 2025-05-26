@@ -32,6 +32,11 @@ jobs:
         uses: PyCQA/bandit-action@v1
         with:
           exclude: './.venv'
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@5.2.0 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   docker-test:
     needs: 'quality-check'

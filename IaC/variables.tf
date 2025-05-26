@@ -1,6 +1,6 @@
 variable "webappName" {
   type    = string
-  default = "app-weu-gaborka812-django"
+  default = "django-contapp"
 }
 
 variable "dockerimageName" {
